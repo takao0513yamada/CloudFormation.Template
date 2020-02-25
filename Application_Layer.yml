@@ -1,0 +1,141 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Application_Layer Template
+
+Parameters:
+  InstanceType:
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - m1.small
+      - m1.large
+  DBInstanceType:
+    Type: String
+    Default: db.t2.micro
+    AllowedValues:
+      - db.t2.micro
+      - db.t2.small
+      - db.t2.medium
+  S3BucketName:
+    Type: String
+
+Resources:
+# ------------------------------------------------------------#
+#  EC2
+# ------------------------------------------------------------#
+  SampleEC21a:
+    Type: AWS::EC2::Instance
+    Properties:
+      NetworkInterfaces:
+        - SubnetId: !ImportValue NetworkLayer-PublicSubnet1a
+          GroupSet:
+            - !ImportValue SecurityLayer-SecurityGroupEC2
+      InstanceType: !Ref InstanceType
+      ImageId: ami-0af1df87db7b650f4
+      Tags:
+        - Key: Name
+          Value: SampleEC21a
+      KeyName: aws-test
+  SampleEC21c:
+    Type: AWS::EC2::Instance
+    Properties:
+      NetworkInterfaces:
+        - SubnetId: !ImportValue NetworkLayer-PublicSubnet1c
+          GroupSet:
+            - !ImportValue SecurityLayer-SecurityGroupEC2
+      InstanceType: !Ref InstanceType
+      ImageId: ami-0af1df87db7b650f4
+      Tags:
+        - Key: Name
+          Value: SampleEC21c
+      KeyName: aws-test
+
+# ------------------------------------------------------------#
+#  RDS
+# ------------------------------------------------------------#
+  SampleRDS:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceClass: !Ref DBInstanceType
+      Port: 3306
+      StorageType: gp2
+      BackupRetentionPeriod: 7
+      MasterUsername: admin
+      MasterUserPassword: MyPassword
+      DBName: SampleRDS
+      Engine: mysql
+      EngineVersion: 5.7.22
+      DBSubnetGroupName: !Ref SampleRDSSubnetgroup
+      MultiAZ: ture
+      VPCSecurityGroups:
+        - !Ref SecurityLayer-SecurityGroupRDS
+
+  SampleRDSSubnetgroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupName: SampleRDSSubnetgroup
+      SubnetIds:
+        - !Ref NetworkLayer-PrivateSubnet1a
+        - !Ref NetworkLayer-PrivateSubnet1c
+# ------------------------------------------------------------#
+#  ALB
+# ------------------------------------------------------------#
+  SampleALB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      IpAddressType: ipv4
+      Name: SampleALB
+      Scheme: internet-facing
+      SecurityGroups:
+        - !ImportValue SecurityLayer-SecurityGroupALB
+      Subnets:
+        - !ImportValue NetworkLayer-PublicSubnet1a
+        - !ImportValue NetworkLayer-PublicSubnet1c
+      Tags:
+        - Key: Name
+          Value: SampleALB
+
+  # ALBのターゲットグループの指定
+  ALBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: ALBTargetGroup
+      Port: 80
+      Protocol: HTTP
+      Targets:
+        - Id:
+            Ref: SampleEC21a
+          Port: 80
+        - Id:
+            Ref: SampleEC21c
+          Port: 80
+      VpcId: !ImportValue NetworkLayer-SampleVPC
+
+  # ALBのリスナーの指定
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn:
+            !Ref ALBTargetGroup
+      LoadBalancerArn:
+        !Ref SampleALB
+      Port: 80
+      Protocol: HTTP
+
+# ------------------------------------------------------------#
+#  S3
+# ------------------------------------------------------------#
+  SampleS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref S3BucketName
+      AccessControl: Private
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+      VersioningConfiguration:
+        Status: Enabled

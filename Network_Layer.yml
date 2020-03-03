@@ -1,6 +1,21 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Network_Layer Template
 
+Parameters:
+  CidrBlock:
+    Description: Please input an IP range
+    Type: String
+    Default: 10.0.0.0/16
+  AvailabilityZone1a:
+    Description: Please input Availability Zone
+    Type: AWS::EC2::AvailabilityZone::Name
+    Default: ap-northeast-1a
+  AvailabilityZone1c:
+    Description: Please input Availability Zone
+    Type: AWS::EC2::AvailabilityZone::Name
+    Default: ap-northeast-1c
+
+
 Resources:
 # ------------------------------------------------------------#
 #  VPC
@@ -8,7 +23,7 @@ Resources:
   SampleVPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: 10.0.0.0/16
+      CidrBlock: !Ref CidrBlock
       EnableDnsSupport: true
       EnableDnsHostnames: true
       InstanceTenancy: default
@@ -23,9 +38,9 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref SampleVPC
-      CidrBlock: 10.0.0.0/24
+      CidrBlock: !Select [ 0, !Cidr [ !GetAtt SampleVPC.CidrBlock, 1, 8 ]]
       MapPublicIpOnLaunch: true
-      AvailabilityZone: ap-northeast-1a
+      AvailabilityZone: !Ref AvailabilityZone1a
       Tags:
       - Key: Name
         Value: PublicSubnet1a
@@ -33,8 +48,8 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref SampleVPC
-      CidrBlock: 10.0.1.0/24
-      AvailabilityZone: ap-northeast-1a
+      CidrBlock: !Select [ 1, !Cidr [ !GetAtt SampleVPC.CidrBlock, 2, 8 ]]
+      AvailabilityZone: !Ref AvailabilityZone1a
       Tags:
       - Key: Name
         Value: PrivateSubnet1a
@@ -42,9 +57,9 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref SampleVPC
-      CidrBlock: 10.0.3.0/24
+      CidrBlock: !Select [ 2, !Cidr [ !GetAtt SampleVPC.CidrBlock, 3, 8 ]]
       MapPublicIpOnLaunch: true
-      AvailabilityZone: ap-northeast-1c
+      AvailabilityZone: !Ref AvailabilityZone1c
       Tags:
       - Key: Name
         Value: PublicSubnet1c
@@ -52,8 +67,8 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref SampleVPC
-      CidrBlock: 10.0.2.0/24
-      AvailabilityZone: ap-northeast-1c
+      CidrBlock: !Select [ 3, !Cidr [ !GetAtt SampleVPC.CidrBlock, 4, 8 ]]
+      AvailabilityZone: !Ref AvailabilityZone1c
       Tags:
       - Key: Name
         Value: PrivateSubnet1c

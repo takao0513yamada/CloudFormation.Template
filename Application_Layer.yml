@@ -9,6 +9,13 @@ Parameters:
       - t2.micro
       - m1.small
       - m1.large
+  AmiID:
+    Description: Please input Ami ID
+    Type: AWS::EC2::Image::Id
+    Default: ami-0af1df87db7b650f4
+  KeyPair:
+    Description: Please input KeyPair name
+    Type: AWS::EC2::KeyPair::KeyName
   DBInstanceIdentifier:
     Type: String
   DBInstanceType:
@@ -36,11 +43,11 @@ Resources:
             - !ImportValue SecurityLayer-SecurityGroupEC2
           DeviceIndex: 0
       InstanceType: !Ref InstanceType
-      ImageId: ami-0af1df87db7b650f4
+      ImageId: !Ref AmiID
       Tags:
         - Key: Name
           Value: SampleEC21a
-      KeyName: aws-test
+      KeyName: !Ref KeyPair
   SampleEC21c:
     Type: AWS::EC2::Instance
     Properties:
@@ -50,11 +57,11 @@ Resources:
             - !ImportValue SecurityLayer-SecurityGroupEC2
           DeviceIndex: 0
       InstanceType: !Ref InstanceType
-      ImageId: ami-0af1df87db7b650f4
+      ImageId: !Ref AmiID
       Tags:
         - Key: Name
           Value: SampleEC21c
-      KeyName: aws-test
+      KeyName: !Ref KeyPair
 
 # ------------------------------------------------------------#
 #  RDS
